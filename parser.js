@@ -1,6 +1,7 @@
 var cheerio = require('cheerio');
 var fs = require('fs');
 var path = require('path');
+var sanitizeHtml = require('sanitize-html');
 var toMarkdown = require('to-markdown');
 
 // extract the 'main-content' div from HTML file
@@ -10,7 +11,8 @@ var toMarkdown = require('to-markdown');
 function scrape(exportedFile) {
 
     var htmlString = fs.readFileSync(exportedFile);
-    var $ = cheerio.load(htmlString);
+    var sanitized = sanitizeHtml(htmlString);
+    var $ = cheerio.load(sanitized);
 
     var pageId = exportedFile.slice(-13,-5);
     var pageName = exportedFile.slice(4).split("_")[0];
@@ -28,16 +30,28 @@ function scrape(exportedFile) {
     });
 
     // UPDATE img links
-    // replace this: "attachments/"
-    // with this: TODO: TBD AWS S3 link
-    // $('img').each(function(index, imgTag) {
-    //     var $imgTag = $(imgTag);
-    //     var newImgText = $imgTag.attr('src').replace("attachments/" + pageId, "TBD");
-    //     $imgTag.attr('src', newImgText);
-    // });
+    // replace this: src="attachments/58388634/59135435.png...
+    // with this: "https://s3.amazonaws.com/postman-static-getpostman-com/postman-docs/59135435.png"
+    $('img').each(function(index, imgTag) {
+        var $imgTag = $(imgTag);
+        var newImgText = $imgTag.attr('src').replace("attachments/" + pageId + "/", "https://s3.amazonaws.com/postman-static-getpostman-com/postman-docs/");
+        var paramIndex = newImgText.indexOf("?");
+        var newLink = newImgText.slice(0, paramIndex);
+        $imgTag.attr('src', newLink);
+    });
 
     // convert HTML to MD
-    var markdownPage = toMarkdown(mainDiv.html());
+    var markdownPage = toMarkdown(mainDiv.html(), {
+        converters:
+        [ {
+            filter: function (node) {
+                return node.nodeName === 'span';
+            },
+            replacement: function (content) {
+                return "";
+            }
+        }]
+    });
 
     // write file
     fs.writeFileSync(pageName + '.md', markdownPage);
@@ -47,7 +61,7 @@ function scrape(exportedFile) {
     console.log(mainDiv.html());
 }
 
-var moveFrom = "./DOC";
+var moveFrom = "./DOC"; // HTML pages exported from wiki to crawl
 var moveTo = "./DOC";
 
 // Loop through entries in a folder
@@ -78,14 +92,6 @@ fs.readdir(moveFrom, function(err, entries) {
                 console.log("'%s' is a directory.", fromPath);
             }
 
-            // fs.rename(fromPath, toPath, function(error) {
-            //     if(error) {
-            //         console.error("File moving error.", error);
-            //     }
-            //     else {
-            //         console.log("Moved file '%s' to '%s'.", fromPath, toPath);
-            //     }
-            // });
         });
     });
 });
