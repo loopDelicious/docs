@@ -1,3 +1,5 @@
 .idea/
-DOC*/
 node_modules/
+
+DOC*/
+*.md
