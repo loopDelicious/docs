@@ -48,7 +48,9 @@ function scrape(exportedFile, paramLength) {
     var mainDiv = $('#main-content');
 
     // sanitize HTML by removing unwanted CSS
-    var sanitizedDiv = sanitizeHtml(mainDiv);
+    var sanitizedDiv = sanitizeHtml(mainDiv, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img'])
+    });
 
     // convert HTML to MD
     var markdownPage = toMarkdown(sanitizedDiv);
