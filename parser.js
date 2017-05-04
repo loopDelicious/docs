@@ -8,10 +8,10 @@ var toMarkdown = require('to-markdown');
 // UPDATE relative links
 // UPDATE img links
 // convert HTML to MD
-function scrape(exportedFile) {
+function scrape(exportedFile, paramLength) {
 
     var pageId = exportedFile.slice(-13,-5);
-    var pageName = exportedFile.slice(4).split("_")[0];
+    var pageName = exportedFile.slice(paramLength).split("_")[0];
 
     // read in file
     var htmlString = fs.readFileSync(exportedFile);
@@ -54,7 +54,7 @@ function scrape(exportedFile) {
     var markdownPage = toMarkdown(sanitizedDiv);
 
     // write file
-    fs.writeFileSync(pageName + '.md', markdownPage);
+    fs.writeFileSync('./convertedPages/' + pageName + '.md', markdownPage);
 
     console.log(pageId);
     console.log(pageName);
@@ -88,7 +88,7 @@ function crawler(moveFrom, moveTo) {
                 if (stat.isFile() && entry != ".DS_Store") {
                     console.log("'%s' is a file.", fromPath);
                     console.log("Scraping '%s'", fromPath);
-                    scrape(fromPath);
+                    scrape(fromPath, moveFrom.length - 1);
                 } else if (stat.isDirectory()) {
                     console.log("'%s' is a directory.", fromPath);
                 }
@@ -98,6 +98,8 @@ function crawler(moveFrom, moveTo) {
     });
 }
 
-crawler("./DOC", "./DOC");
+// crawler("./DOC", "./DOC"); // test folder
+crawler("./finalWiki", "./finalWiki");
+
 
 // scrape('./DOC/Authorization_58930556.html');
