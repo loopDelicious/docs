@@ -13,23 +13,22 @@ function scrape(exportedFile) {
     var pageId = exportedFile.slice(-13,-5);
     var pageName = exportedFile.slice(4).split("_")[0];
 
-    // read in, and sanitize HTML by removing unwanted CSS
+    // read in file
     var htmlString = fs.readFileSync(exportedFile);
     // console.log("htmlString " + typeof(htmlString)); // object
     // console.log("htmlString " + htmlString); // object
-    var sanitized = sanitizeHtml(htmlString);
-    // console.log("sanitized " + typeof(sanitized)); // string
-    // console.log("sanitized " + sanitized); // string
-    var sanitizedObj = JSON.parse(sanitized);
+
     // parse HTML
-    // var $ = cheerio.load(sanitized);
-    var $ = cheerio.load(sanitizedObj);
+    var $ = cheerio.load(htmlString);
 
     // UPDATE relative links
     // replace this: https://postmanlabs.atlassian.net/wiki/display/DOC/
     // with this: https://www.getpostman.com/docs/
     $('a').each(function(index, aTag) {
         var $aTag = $(aTag);
+        if (!$aTag.attr('href')) {
+            return;
+        }
         var newText = $aTag.attr('href').replace("https://postmanlabs.atlassian.net/wiki/display/DOC/", "https://www.getpostman.com/docs/");
         $aTag.attr('href', newText);
     });
@@ -48,12 +47,11 @@ function scrape(exportedFile) {
     // pull out element with #main-content
     var mainDiv = $('#main-content');
 
-    // convert HTML to MD
-    // console.log(typeof(mainDiv.html()));
-    // console.log('main div ' + mainDiv.html());
-    var markdownPage = toMarkdown(mainDiv.html());
+    // sanitize HTML by removing unwanted CSS
+    var sanitizedDiv = sanitizeHtml(mainDiv);
 
-    console.log('after md conversion');
+    // convert HTML to MD
+    var markdownPage = toMarkdown(sanitizedDiv);
 
     // write file
     fs.writeFileSync(pageName + '.md', markdownPage);
